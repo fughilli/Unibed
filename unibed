@@ -1,0 +1,148 @@
+#!/usr/bin/python
+
+##
+## Unibed is a unified embedded development platform.
+## Copyright (C) 2016  Kevin Balke  (kbalke@ucla.edu)
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software Foundation,
+## Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+##
+
+# ./configure.py build -b <board> -a <app> -d <dir>
+# ./configure.py list [-b[ <board>]] [-a[ <app>]] [-c[ <chip>]]
+# ^^^ list build objects, filtering by different types/specific objects
+
+from ninja_syntax import Writer
+import argparse
+import lib.unibed as unibed
+import sys
+
+if __name__ == '__main__':
+
+    ##
+    ## Setup paths.
+    ##
+    boards_path = unibed.get_path('boards', unibed.root_path)
+    apps_path = unibed.get_path('apps', unibed.root_path)
+
+    ##
+    ## Get all entries.
+    ##
+    allboards = unibed.get_entries('', boards_path)
+    allapps = unibed.get_entries('', apps_path)
+
+    ##
+    ## Configure the parsers.
+    ##
+    parser = argparse.ArgumentParser(description='Configure a Unibed build.')
+
+    parser.add_argument('-v', '--verbose', action='count', default=0)
+
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    build_parser = subparsers.add_parser('build', help='build help')
+    build_parser.add_argument('--board', '-b',  metavar='board', nargs='*',
+                              type=str, help='the board to build for.',
+                              choices=allboards)
+    build_parser.add_argument('--app', '-a', metavar='app', nargs='*', type=str,
+                              help='the app to build.', choices=allapps)
+    build_parser.add_argument('--dir', '-d', metavar='dir', type=str,
+                              default='.', help='the directory to write the ' +
+                              'build script to.')
+
+    build_parser.add_argument('--all', '-A', action='store_const', const=True,
+                              help='build all apps for all boards.')
+
+    build_parser.set_defaults(which='build')
+
+    list_parser = subparsers.add_parser('list', help='list help')
+    list_parser.add_argument('--board', '-b', metavar='board', nargs='*',
+                             type=str, help='When no argument is present, list \
+boards; when argument is present, list items for a board', choices=allboards)
+
+    list_parser.add_argument('--app', '-a', metavar='app', nargs='*', type=str,
+                             help='When no argument is present, list apps; \
+when argument is present, list items for an app', choices=allapps)
+
+    list_parser.set_defaults(which='list')
+
+    ##
+    ## Parse the arguments.
+    ##
+    args = parser.parse_args()
+
+    ##
+    ## Set verbosity level.
+    ##
+    if(args.verbose):
+        unibed.verbosity = args.verbose
+
+    ##
+    ## Subparser used is 'list'.
+    ##
+    if(args.which == 'list'):
+
+        ##
+        ## User provided the board flag.
+        ##
+        if(not args.board == None):
+
+            ##
+            ## User did not supply a board. List all boards.
+            ##
+            if(args.board == []):
+                print '\n'.join(allboards)
+
+            ##
+            ## User supplied board(s) to list properties for.
+            ##
+            elif(len(args.board)):
+                unibed.debug_v(1, 'get props for board(s) ' + ' '.join(args.board))
+
+                for board in args.board:
+                    node = unibed.UnibedNode.getNode(unibed.get_path(board,
+                                                             boards_path))
+                    print '\n'.join([k + ' = ' + repr(v) for k,v in
+                                     node.config.iteritems()])
+
+        ##
+        ## User provided the app flag.
+        ##
+        if(not args.app == None):
+
+            ##
+            ## User did not supply an app. List all apps.
+            ##
+            if(args.app == []):
+                print '\n'.join(allapps)
+
+            ##
+            ## User supplied app(s) to list properties for.
+            ##
+            elif(len(args.app)):
+                unibed.debug_v(1, 'get props for app(s) ' + ' '.join(args.app))
+
+                for app in args.app:
+                    node = unibed.UnibedNode.getNode(unibed.get_path(app,
+                                                             apps_path))
+                    print '\n'.join([k + ' = ' + repr(v) for k,v in
+                                     node.config.iteritems()])
+
+    if(args.which == 'build'):
+        if(not args.board or not args.app):
+            unibed.fail('Need to supply both a board and an app to build!')
+
+        for board in [unibed.UnibedNode.getNode(unibed.get_path(x, boards_path)) for x in args.board]:
+            for app in [unibed.UnibedNode.getNode(unibed.get_path(x, apps_path)) for x in args.app]:
+                unibed.build(app, board)

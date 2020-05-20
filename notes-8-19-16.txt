@@ -1,0 +1,9 @@
+Python program that takes python AST and converts it into template configs in
+C++
+
+Use that template config to compile a C++ program using those templates
+Develop other template assembler frontends (graphical?)
+
+graphical becomes LEGO? physical programming (assemble LEGOs to write program,
+use Kinect and SLAM to derive a 3D representation; fit grid and compute layout;
+construct program; compile)

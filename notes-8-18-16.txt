@@ -1,0 +1,7 @@
+Rabbit cipher (or other stream cipher) adapter
+Multiplexer adapter that allows specifying fast branch (StreamSetupAdapter --
+could be used to direct traffic to a KExAdapter for initial key exchange during
+connection setup, after which the StreamSetupAdapter will be flipped over to
+the other branch, which is marked likely (so the instructions will be generated
+to maximize cache hits with the likely branch on an address subsequent to PC);
+maximize runtime performance!!!)

@@ -1,0 +1,5 @@
+statically determine thread availability
+transactional stream ports as comm layer classes
+bootloader application
+blink application
+python API for device streams (make modular interface with Qt for interacting with bootloader, multiple serial ports, transactional debug data interfaces, etc.)
